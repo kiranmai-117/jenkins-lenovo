@@ -1,87 +1,140 @@
+# apiVersion: v1
+# kind: Pod
+# spec:
+#   containers:
+#   - name: jnlp
+#     image: docker-virtual.artifactory.tc.lenovo.com/jenkins/inbound-agent:latest
+#     resources:
+#       limits:
+#         cpu: 1000m
+#         memory: 2Gi
+#       requests:
+#         cpu: 500m
+#         memory: 1Gi
+#     volumeMounts:
+#     - name: workspace-vol
+#       mountPath: /workspace
+#     - name: metrics-vol
+#       mountPath: /metrics
+
+#   - name: model-server
+#     image: vllm/vllm-openai:latest
+#     command: ["sh", "-c"]
+#     args: ["sleep infinity"]
+#     resources:
+#       limits:
+#         cpu: 10000m
+#         memory: 120Gi
+#         nvidia.com/gpu: "1"
+#       requests:
+#         cpu: 8000m
+#         memory: 100Gi
+#         nvidia.com/gpu: "1"
+#     ports:
+#     - containerPort: 8000
+#     volumeMounts:
+#     - name: model-server-cache
+#       mountPath: /root/.cache/huggingface
+#     - name: workspace-vol
+#       mountPath: /workspace
+#     - name: metrics-vol
+#       mountPath: /metrics
+
+#   - name: coding-agent
+#     image: node:22-slim
+#     command: ['sh', '-c', 'cat']
+#     tty: true
+#     env:
+#     - name: NPM_CONFIG_PREFIX
+#       value: "/npm-global"
+#     - name: IS_SANDBOX
+#       value: "1"
+#     resources:
+#       limits:
+#         cpu: 8000m
+#         memory: 16Gi
+#       requests:
+#         cpu: 2000m
+#         memory: 4Gi
+#     volumeMounts:
+#     - name: npm-global-cache
+#       mountPath: /npm-global
+#     - name: workspace-vol
+#       mountPath: /workspace
+#     - name: metrics-vol
+#       mountPath: /metrics
+
+#   nodeSelector:
+#     eks.amazonaws.com/nodegroup: lcp-jenkins-gpu-llm
+#   tolerations:
+#   - effect: NoSchedule
+#     key: eks.amazonaws.com/nodegroup
+#     operator: Equal
+#     value: lcp-jenkins-gpu-llm
+
+#   volumes:
+#   - name: npm-global-cache
+#     hostPath:
+#       path: /mnt/npm-global-cache
+#       type: DirectoryOrCreate
+#   - name: model-server-cache
+#     hostPath:
+#       path: /mnt/model-server-cache
+#       type: DirectoryOrCreate
+#   - name: workspace-vol
+#     emptyDir: {}
+#   - name: metrics-vol
+#     emptyDir: {}
+
+
 apiVersion: v1
 kind: Pod
+
 spec:
   containers:
-  - name: jnlp
-    image: docker-virtual.artifactory.tc.lenovo.com/jenkins/inbound-agent:latest
-    resources:
-      limits:
-        cpu: 1000m
-        memory: 2Gi
-      requests:
-        cpu: 500m
-        memory: 1Gi
-    volumeMounts:
-    - name: workspace-vol
-      mountPath: /workspace
-    - name: metrics-vol
-      mountPath: /metrics
+    - name: jnlp
+      image: jenkins/inbound-agent:latest
+      tty: true
+      volumeMounts:
+        - name: workspace-vol
+          mountPath: /workspace
 
-  - name: model-server
-    image: vllm/vllm-openai:latest
-    command: ["sh", "-c"]
-    args: ["sleep infinity"]
-    resources:
-      limits:
-        cpu: 10000m
-        memory: 120Gi
-        nvidia.com/gpu: "1"
-      requests:
-        cpu: 8000m
-        memory: 100Gi
-        nvidia.com/gpu: "1"
-    ports:
-    - containerPort: 8000
-    volumeMounts:
-    - name: model-server-cache
-      mountPath: /root/.cache/huggingface
-    - name: workspace-vol
-      mountPath: /workspace
-    - name: metrics-vol
-      mountPath: /metrics
+    - name: ollama
+      image: ollama/ollama:latest
+      tty: true
+      ports:
+        - containerPort: 11434
+      command: ["sh", "-c"]
+      args:
+        - |
+          ollama serve
+      volumeMounts:
+        - name: ollama-cache
+          mountPath: /root/.ollama
+        - name: workspace-vol
+          mountPath: /workspace
 
-  - name: coding-agent
-    image: node:22-slim
-    command: ['sh', '-c', 'cat']
-    tty: true
-    env:
-    - name: NPM_CONFIG_PREFIX
-      value: "/npm-global"
-    - name: IS_SANDBOX
-      value: "1"
-    resources:
-      limits:
-        cpu: 8000m
-        memory: 16Gi
-      requests:
-        cpu: 2000m
-        memory: 4Gi
-    volumeMounts:
-    - name: npm-global-cache
-      mountPath: /npm-global
-    - name: workspace-vol
-      mountPath: /workspace
-    - name: metrics-vol
-      mountPath: /metrics
-
-  nodeSelector:
-    eks.amazonaws.com/nodegroup: lcp-jenkins-gpu-llm
-  tolerations:
-  - effect: NoSchedule
-    key: eks.amazonaws.com/nodegroup
-    operator: Equal
-    value: lcp-jenkins-gpu-llm
+    - name: coding-agent
+      image: node:22-slim
+      command: ["sh", "-c", "cat"]
+      tty: true
+      env:
+        - name: NPM_CONFIG_PREFIX
+          value: "/npm-global"
+        - name: IS_SANDBOX
+          value: "1"
+      volumeMounts:
+        - name: npm-global-cache
+          mountPath: /npm-global
+        - name: workspace-vol
+          mountPath: /workspace
 
   volumes:
-  - name: npm-global-cache
-    hostPath:
-      path: /mnt/npm-global-cache
-      type: DirectoryOrCreate
-  - name: model-server-cache
-    hostPath:
-      path: /mnt/model-server-cache
-      type: DirectoryOrCreate
-  - name: workspace-vol
-    emptyDir: {}
-  - name: metrics-vol
-    emptyDir: {}
+    - name: workspace-vol
+      emptyDir: {}
+
+    - name: npm-global-cache
+      emptyDir: {}
+
+    - name: ollama-cache
+      emptyDir: {}
