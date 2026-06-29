@@ -1,0 +1,67 @@
+{
+  "title": "Coding Agent CI Observability",
+  "description": "Baseline dashboard for GPU/CPU utilization, throughput, and run health.",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "GPU Utilization %",
+        "requests": [
+          {
+            "q": "avg:coding_agent.gpu.utilization_pct{*} by {repo,harness}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "CPU Active %",
+        "requests": [
+          {
+            "q": "avg:coding_agent.cpu.active_pct{*} by {repo,harness}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Tokens Per Second",
+        "requests": [
+          {
+            "q": "avg:coding_agent.tokens.per_second{*} by {repo,harness}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Run Success Ratio (24h)",
+        "requests": [
+          {
+            "q": "avg:coding_agent.run.success{*}"
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "project",
+      "prefix": "project",
+      "default": "*"
+    },
+    {
+      "name": "harness",
+      "prefix": "harness",
+      "default": "*"
+    }
+  ]
+}
