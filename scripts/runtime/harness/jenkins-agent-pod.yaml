@@ -99,7 +99,7 @@ spec:
         - name: workspace-vol
           mountPath: /workspace
 
-    - name: ollama
+    - name: model-server
       image: ollama/ollama:latest
       tty: true
       ports:
