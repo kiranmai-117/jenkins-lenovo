@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            // cloud 'kubernetes'
+            cloud 'kubernetes'
             yamlFile 'scripts/runtime/harness/jenkins-agent-pod.yaml'
             defaultContainer 'jnlp'
         }
