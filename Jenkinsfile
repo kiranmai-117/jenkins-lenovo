@@ -1,7 +1,6 @@
 pipeline {
     agent {
         kubernetes {
-            // cloud 'kubernetes'
             yamlFile 'scripts/runtime/harness/jenkins-agent-pod.yaml'
             defaultContainer 'jnlp'
         }
@@ -82,207 +81,207 @@ pipeline {
             }
         }
 
-        stage('Warm Model Server') {
-            steps {
-                container('model-server') {
-                    sh 'scripts/platform/jenkins/warm-model-server.sh'
-                }
-            }
-        }
+    //     stage('Warm Model Server') {
+    //         steps {
+    //             container('model-server') {
+    //                 sh 'scripts/platform/jenkins/warm-model-server.sh'
+    //             }
+    //         }
+    //     }
 
-        stage('Wait for Model Server') {
-            steps {
-                container('model-server') {
-                    sh 'scripts/platform/jenkins/wait-for-model-server.sh'
-                }
-            }
-        }
+    //     stage('Wait for Model Server') {
+    //         steps {
+    //             container('model-server') {
+    //                 sh 'scripts/platform/jenkins/wait-for-model-server.sh'
+    //             }
+    //         }
+    //     }
 
-        stage('Preflight / Tests') {
-            when {
-                expression { return params.RUN_PREFLIGHT_TESTS == true }
-            }
-            stages {
-                stage('GPU Check') {
-                    steps {
-                        container('model-server') {
-                            sh 'nvidia-smi'
-                        }
-                    }
-                }
+    //     stage('Preflight / Tests') {
+    //         when {
+    //             expression { return params.RUN_PREFLIGHT_TESTS == true }
+    //         }
+    //         stages {
+    //             stage('GPU Check') {
+    //                 steps {
+    //                     container('model-server') {
+    //                         sh 'nvidia-smi'
+    //                     }
+    //                 }
+    //             }
 
-                stage('Test Harness Inference') {
-                    steps {
-                        script {
-                            def runPreflight = {
-                                parallel(
-                                    inference: {
-                                        container('coding-agent') {
-                                            sh 'METRICS_DIR="/metrics/${AGENT_HARNESS}" scripts/platform/jenkins/run-harness-preflight.sh'
-                                        }
-                                    },
-                                    metrics: {
-                                        container('model-server') {
-                                            sh 'RUN_TYPE=preflight scripts/platform/jenkins/collect-metrics.sh --metrics-dir "/metrics/${AGENT_HARNESS}"'
-                                        }
-                                    }
-                                )
-                            }
-                            if (params.ENABLE_DD_METRICS) {
-                                withCredentials([
-                                    string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
-                                ]) {
-                                    runPreflight()
-                                }
-                            } else {
-                                runPreflight()
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    //             stage('Test Harness Inference') {
+    //                 steps {
+    //                     script {
+    //                         def runPreflight = {
+    //                             parallel(
+    //                                 inference: {
+    //                                     container('coding-agent') {
+    //                                         sh 'METRICS_DIR="/metrics/${AGENT_HARNESS}" scripts/platform/jenkins/run-harness-preflight.sh'
+    //                                     }
+    //                                 },
+    //                                 metrics: {
+    //                                     container('model-server') {
+    //                                         sh 'RUN_TYPE=preflight scripts/platform/jenkins/collect-metrics.sh --metrics-dir "/metrics/${AGENT_HARNESS}"'
+    //                                     }
+    //                                 }
+    //                             )
+    //                         }
+    //                         if (params.ENABLE_DD_METRICS) {
+    //                             withCredentials([
+    //                                 string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
+    //                             ]) {
+    //                                 runPreflight()
+    //                             }
+    //                         } else {
+    //                             runPreflight()
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        stage('Setup') {
-            steps {
-                container('coding-agent') {
-                    withCredentials([
-                        usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_API_KEY')
-                    ]) {
-                        sh 'scripts/runtime/harness/setup.sh'
-                    }
-                }
-            }
-        }
+    //     stage('Setup') {
+    //         steps {
+    //             container('coding-agent') {
+    //                 withCredentials([
+    //                     usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_API_KEY')
+    //                 ]) {
+    //                     sh 'scripts/runtime/harness/setup.sh'
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        stage('Enumerate Repos') {
-            steps {
-                container('coding-agent') {
-                    withCredentials([
-                        usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_API_KEY')
-                    ]) {
-                        script {
-                            def repos = sh(
-                                script: 'scripts/runtime/harness/enumerate-repos.sh "${BITBUCKET_PROJECT}"',
-                                returnStdout: true
-                            ).trim()
+    //     stage('Enumerate Repos') {
+    //         steps {
+    //             container('coding-agent') {
+    //                 withCredentials([
+    //                     usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_API_KEY')
+    //                 ]) {
+    //                     script {
+    //                         def repos = sh(
+    //                             script: 'scripts/runtime/harness/enumerate-repos.sh "${BITBUCKET_PROJECT}"',
+    //                             returnStdout: true
+    //                         ).trim()
 
-                            if (!repos) {
-                                error("No repositories found in project '${params.BITBUCKET_PROJECT}'")
-                            }
+    //                         if (!repos) {
+    //                             error("No repositories found in project '${params.BITBUCKET_PROJECT}'")
+    //                         }
 
-                            env.REPO_LIST = repos
-                            echo "Repos to process:\n${repos}"
-                        }
-                    }
-                }
-            }
-        }
+    //                         env.REPO_LIST = repos
+    //                         echo "Repos to process:\n${repos}"
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        stage('Run Agent') {
-            steps {
-                script {
-                    def runAgentParallel = {
-                        parallel(
-                            agent: {
-                                container('coding-agent') {
-                                    script {
-                                        try {
-                                            withCredentials([
-                                                usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER',  passwordVariable: 'BITBUCKET_API_KEY'),
-                                                string(credentialsId: 'JIRA_API_TOKEN', variable: 'JIRA_API_TOKEN'),
-                                                string(credentialsId: 'SONAR_AUTH_TOKEN', variable: 'SONAR_AUTH_TOKEN')
-                                            ]) {
-                                                def repoList = env.REPO_LIST.split('\n')
-                                                for (repo in repoList) {
-                                                    repo = repo.trim()
-                                                    if (!repo) continue
-                                                    echo ">>> Processing repo: ${repo}"
-                                                    sh "scripts/runtime/harness/run-harness-on-repo.sh '${env.BITBUCKET_PROJECT}' '${repo}'"
-                                                }
-                                            }
-                                        } finally {
-                                            sh 'mkdir -p /metrics/agent && touch /metrics/agent/DONE'
-                                        }
-                                    }
-                                }
-                            },
-                            metrics: {
-                                container('model-server') {
-                                    sh 'RUN_TYPE=agent scripts/platform/jenkins/collect-metrics.sh --metrics-dir /metrics/agent'
-                                }
-                            }
-                        )
-                    }
-                    if (params.ENABLE_DD_METRICS) {
-                        withCredentials([
-                            string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
-                        ]) {
-                            runAgentParallel()
-                        }
-                    } else {
-                        runAgentParallel()
-                    }
-                }
-            }
-        }
-    }
+    //     stage('Run Agent') {
+    //         steps {
+    //             script {
+    //                 def runAgentParallel = {
+    //                     parallel(
+    //                         agent: {
+    //                             container('coding-agent') {
+    //                                 script {
+    //                                     try {
+    //                                         withCredentials([
+    //                                             usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER',  passwordVariable: 'BITBUCKET_API_KEY'),
+    //                                             string(credentialsId: 'JIRA_API_TOKEN', variable: 'JIRA_API_TOKEN'),
+    //                                             string(credentialsId: 'SONAR_AUTH_TOKEN', variable: 'SONAR_AUTH_TOKEN')
+    //                                         ]) {
+    //                                             def repoList = env.REPO_LIST.split('\n')
+    //                                             for (repo in repoList) {
+    //                                                 repo = repo.trim()
+    //                                                 if (!repo) continue
+    //                                                 echo ">>> Processing repo: ${repo}"
+    //                                                 sh "scripts/runtime/harness/run-harness-on-repo.sh '${env.BITBUCKET_PROJECT}' '${repo}'"
+    //                                             }
+    //                                         }
+    //                                     } finally {
+    //                                         sh 'mkdir -p /metrics/agent && touch /metrics/agent/DONE'
+    //                                     }
+    //                                 }
+    //                             }
+    //                         },
+    //                         metrics: {
+    //                             container('model-server') {
+    //                                 sh 'RUN_TYPE=agent scripts/platform/jenkins/collect-metrics.sh --metrics-dir /metrics/agent'
+    //                             }
+    //                         }
+    //                     )
+    //                 }
+    //                 if (params.ENABLE_DD_METRICS) {
+    //                     withCredentials([
+    //                         string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
+    //                     ]) {
+    //                         runAgentParallel()
+    //                     }
+    //                 } else {
+    //                     runAgentParallel()
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
-    post {
-        always {
-            container('jnlp') {
-                sh 'scripts/platform/jenkins/post-build-artifacts.sh'
-                archiveArtifacts artifacts: 'pr-summary.txt', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'agent-logs/**/*', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'metrics-artifacts/**/*', allowEmptyArchive: true
-                script {
-                    env.BUILD_RESULT = currentBuild.currentResult ?: 'SUCCESS'
-                }
-                script {
-                    if (params.ENABLE_DD_METRICS) {
-                        withCredentials([
-                            string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
-                        ]) {
-                            sh '''
-                                set +e
-                                scripts/platform/jenkins/export-run-metrics-to-datadog.sh "${WORKSPACE}"
-                                rc=$?
-                                if [ "$rc" -ne 0 ]; then
-                                    echo "WARNING: Datadog export failed (non-fatal), exit=${rc}"
-                                fi
-                                set -e
-                            '''
-                        }
-                    } else {
-                        echo "Datadog export disabled for this build (ENABLE_DD_METRICS=false)."
-                    }
-                }
-                script {
-                    if (fileExists('metrics-artifacts/agent/metrics-summary.html')) {
-                        publishHTML(target: [
-                            allowMissing:          false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll:               true,
-                            reportDir:             'metrics-artifacts/agent',
-                            reportFiles:           'metrics-summary.html',
-                            reportName:            'Agent Run GPU/CPU Metrics'
-                        ])
-                    }
-                    if (fileExists("metrics-artifacts/${env.AGENT_HARNESS}/metrics-summary.html")) {
-                        publishHTML(target: [
-                            allowMissing:          false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll:               true,
-                            reportDir:             "metrics-artifacts/${env.AGENT_HARNESS}",
-                            reportFiles:           'metrics-summary.html',
-                            reportName:            'Preflight GPU/CPU Metrics'
-                        ])
-                    }
-                }
-            }
-        }
-        failure {
-            echo 'Pipeline failed. Check the agent logs above for details.'
-        }
-    }
+    // post {
+    //     always {
+    //         container('jnlp') {
+    //             sh 'scripts/platform/jenkins/post-build-artifacts.sh'
+    //             archiveArtifacts artifacts: 'pr-summary.txt', allowEmptyArchive: true
+    //             archiveArtifacts artifacts: 'agent-logs/**/*', allowEmptyArchive: true
+    //             archiveArtifacts artifacts: 'metrics-artifacts/**/*', allowEmptyArchive: true
+    //             script {
+    //                 env.BUILD_RESULT = currentBuild.currentResult ?: 'SUCCESS'
+    //             }
+    //             script {
+    //                 if (params.ENABLE_DD_METRICS) {
+    //                     withCredentials([
+    //                         string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
+    //                     ]) {
+    //                         sh '''
+    //                             set +e
+    //                             scripts/platform/jenkins/export-run-metrics-to-datadog.sh "${WORKSPACE}"
+    //                             rc=$?
+    //                             if [ "$rc" -ne 0 ]; then
+    //                                 echo "WARNING: Datadog export failed (non-fatal), exit=${rc}"
+    //                             fi
+    //                             set -e
+    //                         '''
+    //                     }
+    //                 } else {
+    //                     echo "Datadog export disabled for this build (ENABLE_DD_METRICS=false)."
+    //                 }
+    //             }
+    //             script {
+    //                 if (fileExists('metrics-artifacts/agent/metrics-summary.html')) {
+    //                     publishHTML(target: [
+    //                         allowMissing:          false,
+    //                         alwaysLinkToLastBuild: true,
+    //                         keepAll:               true,
+    //                         reportDir:             'metrics-artifacts/agent',
+    //                         reportFiles:           'metrics-summary.html',
+    //                         reportName:            'Agent Run GPU/CPU Metrics'
+    //                     ])
+    //                 }
+    //                 if (fileExists("metrics-artifacts/${env.AGENT_HARNESS}/metrics-summary.html")) {
+    //                     publishHTML(target: [
+    //                         allowMissing:          false,
+    //                         alwaysLinkToLastBuild: true,
+    //                         keepAll:               true,
+    //                         reportDir:             "metrics-artifacts/${env.AGENT_HARNESS}",
+    //                         reportFiles:           'metrics-summary.html',
+    //                         reportName:            'Preflight GPU/CPU Metrics'
+    //                     ])
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     failure {
+    //         echo 'Pipeline failed. Check the agent logs above for details.'
+    //     }
+    // }
 }
