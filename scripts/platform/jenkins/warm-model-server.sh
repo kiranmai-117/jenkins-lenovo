@@ -49,34 +49,35 @@ if [[ "${MODEL_RUNTIME}" == "ollama" ]]; then
     fi
 
 else
-# Existing code starts here (unchanged)
-if curl -fsS "${READY_URL}" > /dev/null 2>&1; then
-    echo "Status: server already running."
-else
-    echo "Status: starting vLLM server..."
-    : > "${SERVER_LOG}"
-    # Start detached so Jenkins warmup step can finish.
-    nohup vllm serve "${MODEL_SOURCE}" \
-        --host 0.0.0.0 \
-        --port 8000 \
-        --served-model-name "${MODEL}" \
-        --tensor-parallel-size 1 \
-        --max-model-len "${MODEL_SERVER_MAX_MODEL_LEN}" \
-        --gpu-memory-utilization "${MODEL_SERVER_GPU_MEMORY_UTILIZATION}" \
-        --trust-remote-code \
-        --max-num-seqs 32 \
-        --enable-auto-tool-choice \
-        --tool-call-parser qwen3_coder \
-        --reasoning-parser qwen3 \
-        --speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":1}' \
-        --language-model-only \
-        >> "${SERVER_LOG}" 2>&1 &
-    echo $! > "${SERVER_PID_FILE}"
-    echo "Started PID: $(cat "${SERVER_PID_FILE}")"
+    # Existing code starts here (unchanged)
+    if curl -fsS "${READY_URL}" > /dev/null 2>&1; then
+        echo "Status: server already running."
+    else
+        echo "Status: starting vLLM server..."
+        : > "${SERVER_LOG}"
+        # Start detached so Jenkins warmup step can finish.
+        nohup vllm serve "${MODEL_SOURCE}" \
+            --host 0.0.0.0 \
+            --port 8000 \
+            --served-model-name "${MODEL}" \
+            --tensor-parallel-size 1 \
+            --max-model-len "${MODEL_SERVER_MAX_MODEL_LEN}" \
+            --gpu-memory-utilization "${MODEL_SERVER_GPU_MEMORY_UTILIZATION}" \
+            --trust-remote-code \
+            --max-num-seqs 32 \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_coder \
+            --reasoning-parser qwen3 \
+            --speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":1}' \
+            --language-model-only \
+            >> "${SERVER_LOG}" 2>&1 &
+        echo $! > "${SERVER_PID_FILE}"
+        echo "Started PID: $(cat "${SERVER_PID_FILE}")"
 
-    # Stream logs live only during startup/warmup.
-    tail -n +1 -f "${SERVER_LOG}" &
-    LOG_TAIL_PID=$!
+        # Stream logs live only during startup/warmup.
+        tail -n +1 -f "${SERVER_LOG}" &
+        LOG_TAIL_PID=$!
+    fi
 fi
 
 echo "Waiting for server readiness..."
@@ -114,7 +115,6 @@ payload=$(cat <<EOF
 EOF
 )
 
-
 if curl -fsS -X POST "${MODEL_SERVER_BASE_URL}/chat/completions" \
     -H "Content-Type: application/json" \
     -d "${payload}" > /tmp/model-server-warmup.json; then
@@ -127,5 +127,6 @@ else
     cleanup_tail
     exit 1
 fi
+
 cleanup_tail
 echo "Log file: ${SERVER_LOG}"
