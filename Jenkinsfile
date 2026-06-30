@@ -283,5 +283,5 @@ pipeline {
     //     failure {
     //         echo 'Pipeline failed. Check the agent logs above for details.'
     //     }
-    // }
+    }
 }
