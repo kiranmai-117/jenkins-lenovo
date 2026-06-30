@@ -38,6 +38,18 @@ echo "Max model len: ${MODEL_SERVER_MAX_MODEL_LEN}"
 echo "GPU memory util: ${MODEL_SERVER_GPU_MEMORY_UTILIZATION}"
 
 # If a healthy server is already up in this pod, reuse it.
+if [[ "${MODEL_RUNTIME}" == "ollama" ]]; then
+    echo "Using Ollama."
+
+    if curl -fsS "${READY_URL}" > /dev/null 2>&1; then
+        echo "Ollama server is running."
+    else
+        echo "ERROR: Ollama server is not running."
+        exit 1
+    fi
+
+else
+# Existing code starts here (unchanged)
 if curl -fsS "${READY_URL}" > /dev/null 2>&1; then
     echo "Status: server already running."
 else

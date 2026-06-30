@@ -81,13 +81,13 @@ pipeline {
             }
         }
 
-    //     stage('Warm Model Server') {
-    //         steps {
-    //             container('model-server') {
-    //                 sh 'scripts/platform/jenkins/warm-model-server.sh'
-    //             }
-    //         }
-    //     }
+        stage('Warm Model Server') {
+            steps {
+                container('model-server') {
+                    sh 'scripts/platform/jenkins/warm-model-server.sh'
+                }
+            }
+        }
 
     //     stage('Wait for Model Server') {
     //         steps {
