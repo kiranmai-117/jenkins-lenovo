@@ -85,13 +85,11 @@ pipeline {
         stage('Warm Model Server') {
             steps {
                 container('model-server') {
-    sh '''
-        ps -ef
-        curl -v http://localhost:11434/v1/models
-    '''
-}
-                container('model-server') {
-                    sh 'bash -x scripts/platform/jenkins/warm-model-server.sh'
+                    sh '''
+                        apt-get update
+                        apt-get install -y curl
+                        bash -x scripts/platform/jenkins/warm-model-server.sh
+                    '''
                 }
             }
         }
