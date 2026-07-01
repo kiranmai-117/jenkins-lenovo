@@ -81,10 +81,18 @@ pipeline {
             }
         }
 
+
         stage('Warm Model Server') {
             steps {
                 container('model-server') {
-                    sh 'sh -x scripts/platform/jenkins/warm-model-server.sh'
+                    sh '''
+                        which bash
+                        bash --version
+                       '''
+                }
+                
+                container('model-server') {
+                    sh 'bash -x scripts/platform/jenkins/warm-model-server.sh'
                 }
             }
         }
