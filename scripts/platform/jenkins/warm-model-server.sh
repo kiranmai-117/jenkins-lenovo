@@ -38,7 +38,7 @@ echo "Max model len: ${MODEL_SERVER_MAX_MODEL_LEN}"
 echo "GPU memory util: ${MODEL_SERVER_GPU_MEMORY_UTILIZATION}"
 
 # If a healthy server is already up in this pod, reuse it.
-if [[ "${MODEL_RUNTIME}" == "ollama" ]]; then
+if [[ "${MODEL_SERVER_PROVIDER}" == "ollama" ]]; then
     echo "Using Ollama."
 
     if curl -fsS "${READY_URL}" > /dev/null 2>&1; then
