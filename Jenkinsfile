@@ -86,9 +86,11 @@ pipeline {
             steps {
                 container('model-server') {
                     sh '''
-                        which bash
-                        bash --version
-                       '''
+                        ps -ef
+                        ss -lnt
+                        curl -v http://localhost:11434/api/tags
+                        curl -v http://localhost:11434/v1/models
+                    '''
                 }
                 
                 container('model-server') {
@@ -150,17 +152,17 @@ pipeline {
             }
         }
 
-    //     stage('Setup') {
-    //         steps {
-    //             container('coding-agent') {
-    //                 withCredentials([
-    //                     usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_API_KEY')
-    //                 ]) {
-    //                     sh 'scripts/runtime/harness/setup.sh'
-    //                 }
-    //             }
-    //         }
-    //     }
+        // stage('Setup') {
+        //     steps {
+        //         container('coding-agent') {
+        //             withCredentials([
+        //                 usernamePassword(credentialsId: 'BITBUCKET_API_KEY', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_API_KEY')
+        //             ]) {
+        //                 sh 'scripts/runtime/harness/setup.sh'
+        //             }
+        //         }
+        //     }
+        // }
 
     //     stage('Enumerate Repos') {
     //         steps {
