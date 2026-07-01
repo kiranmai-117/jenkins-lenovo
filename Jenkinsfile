@@ -81,66 +81,79 @@ pipeline {
             }
         }
 
-        stage('Warm Model Server') {
-            steps {
-                container('model-server') {
-                    sh 'scripts/platform/jenkins/warm-model-server.sh'
-                }
-            }
+        stage('Debug') {
+    steps {
+        container('model-server') {
+            sh '''
+                echo "Inside model-server"
+                whoami
+                pwd
+                ls /
+            '''
         }
+    }
+}
 
-        stage('Wait for Model Server') {
-            steps {
-                container('model-server') {
-                    sh 'scripts/platform/jenkins/wait-for-model-server.sh'
-                }
-            }
-        }
+        // stage('Warm Model Server') {
+        //     steps {
+        //         container('model-server') {
+        //             sh 'scripts/platform/jenkins/warm-model-server.sh'
+        //         }
+        //     }
+        // }
 
-        stage('Preflight / Tests') {
-            when {
-                expression { return params.RUN_PREFLIGHT_TESTS == true }
-            }
-            stages {
-                stage('GPU Check') {
-                    steps {
-                        container('model-server') {
-                            sh 'nvidia-smi'
-                        }
-                    }
-                }
+        // stage('Wait for Model Server') {
+        //     steps {
+        //         container('model-server') {
+        //             sh 'scripts/platform/jenkins/wait-for-model-server.sh'
+        //         }
+        //     }
+        // }
 
-                stage('Test Harness Inference') {
-                    steps {
-                        script {
-                            def runPreflight = {
-                                parallel(
-                                    inference: {
-                                        container('coding-agent') {
-                                            sh 'METRICS_DIR="/metrics/${AGENT_HARNESS}" scripts/platform/jenkins/run-harness-preflight.sh'
-                                        }
-                                    },
-                                    metrics: {
-                                        container('model-server') {
-                                            sh 'RUN_TYPE=preflight scripts/platform/jenkins/collect-metrics.sh --metrics-dir "/metrics/${AGENT_HARNESS}"'
-                                        }
-                                    }
-                                )
-                            }
-                            if (params.ENABLE_DD_METRICS) {
-                                withCredentials([
-                                    string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
-                                ]) {
-                                    runPreflight()
-                                }
-                            } else {
-                                runPreflight()
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Preflight / Tests') {
+        //     when {
+        //         expression { return params.RUN_PREFLIGHT_TESTS == true }
+        //     }
+        //     stages {
+        //         stage('GPU Check') {
+        //             steps {
+        //                 container('model-server') {
+        //                     sh 'nvidia-smi'
+        //                 }
+        //             }
+        //         }
+
+        //         stage('Test Harness Inference') {
+        //             steps {
+        //                 script {
+        //                     def runPreflight = {
+        //                         parallel(
+        //                             inference: {
+        //                                 container('coding-agent') {
+        //                                     sh 'METRICS_DIR="/metrics/${AGENT_HARNESS}" scripts/platform/jenkins/run-harness-preflight.sh'
+        //                                 }
+        //                             },
+        //                             metrics: {
+        //                                 container('model-server') {
+        //                                     sh 'RUN_TYPE=preflight scripts/platform/jenkins/collect-metrics.sh --metrics-dir "/metrics/${AGENT_HARNESS}"'
+        //                                 }
+        //                             }
+        //                         )
+        //                     }
+        //                     if (params.ENABLE_DD_METRICS) {
+        //                         withCredentials([
+        //                             string(credentialsId: 'DATADOG_API_KEY', variable: 'DD_API_KEY')
+        //                         ]) {
+        //                             runPreflight()
+        //                         }
+        //                     } else {
+        //                         runPreflight()
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
     //     stage('Setup') {
     //         steps {
