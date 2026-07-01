@@ -81,26 +81,13 @@ pipeline {
             }
         }
 
-        stage('Debug') {
-    steps {
-        container('model-server') {
-            sh '''
-                echo "Inside model-server"
-                whoami
-                pwd
-                ls /
-            '''
+        stage('Warm Model Server') {
+            steps {
+                container('model-server') {
+                    sh -x 'scripts/platform/jenkins/warm-model-server.sh'
+                }
+            }
         }
-    }
-}
-
-        // stage('Warm Model Server') {
-        //     steps {
-        //         container('model-server') {
-        //             sh 'scripts/platform/jenkins/warm-model-server.sh'
-        //         }
-        //     }
-        // }
 
         // stage('Wait for Model Server') {
         //     steps {
